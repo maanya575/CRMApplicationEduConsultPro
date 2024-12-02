@@ -1,0 +1,28 @@
+trigger ValidateAppointmentTime on Appointment_Appointment__c (before insert, before 
+update) {
+ for (Appointment_Appointment__c appointment : Trigger.new) { 
+ if (appointment.Appointment_DateTime__c != null) {
+ Time startTime = Time.newInstance(9, 0, 0, 0); // 9:00 AM
+ Time endTime = Time.newInstance(18, 0, 0, 0); // 6:00 PM
+ Time appointmentTime = appointment.Appointment_DateTime__c.time();
+ if (appointmentTime < startTime || appointmentTime > endTime) {
+ appointment.addError('Appointment time must be between 9:00 AM and 6:00 
+PM.');
+ }
+ List<Appointment_Appointment__c> overlappingAppointments = [
+ SELECT Id 
+ FROM Appointment_Appointment__c
+ WHERE Appointment_DateTime__c = :appointment.Appointment_DateTime__c
+ AND Consultant_Consultant__c = :appointment.Consultant_Consultant__c
+ AND Id != :appointment.Id
+ ];
+ 
+ if (!overlappingAppointments.isEmpty()) {
+ String result = AppointmentSlotManager.assignAppointmentSlot(appointment);
+ if (result != null) {
+ appointment.addError(result); // Add error if rescheduling fails
+ }
+ }
+ }
+ }
+}
