@@ -1,0 +1,34 @@
+public class AppointmentSlotManager {
+public static String assignAppointmentSlot(Appointment_Appointment__c appointment) {
+ DateTime nextAvailableSlot = 
+findNextAvailableSlot(appointment.Appointment_DateTime__c, 
+appointment.Consultant_Consultant__c);
+ if (nextAvailableSlot != null) {
+ appointment.Appointment_DateTime__c = nextAvailableSlot;
+ try {
+ update appointment;
+ return 'Appointment has been rescheduled to ' + nextAvailableSlot.format();
+ } catch (Exception e) {
+ return 'Error occurred while rescheduling the appointment: ' + e.getMessage();
+ }
+ } else {
+ return 'No available slots for rescheduling.';
+ }
+ }
+ public static DateTime findNextAvailableSlot(DateTime appointmentDateTime, Id 
+consultantId) {
+ List<Appointment_Appointment__c> nextAvailableAppointments = [
+ SELECT Appointment_DateTime__c
+ FROM Appointment_Appointment__c
+ WHERE Consultant_Consultant__c = :consultantId
+ AND Appointment_DateTime__c > :appointmentDateTime
+ ORDER BY Appointment_DateTime__c ASC
+ LIMIT 1
+ ];
+ if (!nextAvailableAppointments.isEmpty()) {
+ return nextAvailableAppointments[0].Appointment_DateTime__c;
+ } else {
+ return null;
+ }
+ }
+}
